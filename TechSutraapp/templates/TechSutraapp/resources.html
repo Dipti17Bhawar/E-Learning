@@ -1,0 +1,146 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ subject.name }} Resources - TechSutra</title>
+    <link rel="stylesheet" href="{% static 'TechSutraapp/css/style.css' %}?v=4.2">
+</head>
+<body>
+
+<!-- ================= NAVBAR ================= -->
+<nav class="navbar">
+    <div class="brand" onclick="goToDashboard()">
+        <div class="brand-logo">TS</div>
+        <h2 class="brand-name">TechSutra</h2>
+    </div>
+
+    
+        <div class="hamburger" onclick="toggleMenu()">
+            <div class="line1"></div>
+            <div class="line2"></div>
+            <div class="line3"></div>
+        </div>
+        <div class="nav-right" id="navArea">
+        <a href="{% url 'home' %}" class="nav-link">Home</a>
+        {% if request.user.is_authenticated %}
+        <div class="user-section">
+            <div class="user-logo" onclick="window.location.href='{% url 'dashboard' %}'">{{ request.user.username.0|upper }}</div>
+            <span class="username" id="server-username">{{ request.user.username }}</span>            {% if request.user.registration_data.role == 'teacher' or request.user.registration_data.role == 'admin' %}
+            <a href="/admin/" class="nav-link" target="_blank">Admin</a>
+            {% endif %}            <a href="{% url 'logout' %}" class="nav-link">Logout</a>
+        </div>
+        {% else %}
+        <a href="{% url 'login' %}" class="login-btn">Login</a>
+        {% endif %}
+    </div>
+</nav>
+
+<!-- ================= STUDY RESOURCES 3-COLUMN PAGE ================= -->
+<div class="study-resources-wrapper">
+    <div class="study-header-band">{{ subject.name }}</div>
+    
+    <div class="study-grid">
+        <!-- COLUMN 1: Notes (PDF) & Notes (PPT) -->
+        <div class="study-col">
+            <div class="resource-group">
+                <h3>📄 Notes (PDF)</h3>
+                {% for res in notes_pdf %}
+                <button class="resource-btn" onclick="openModal('{% if res.file %}{{ res.file.url }}{% else %}#{% endif %}')">{{ res.title }}</button>
+                {% empty %}
+                <p style="color:#777; font-size:14px;">No PDF notes available.</p>
+                {% endfor %}
+            </div>
+            
+            <div class="resource-group" style="margin-top:20px;">
+                <h3>📊 PPT (Download)</h3>
+                {% for res in notes_ppt %}
+                <button class="resource-btn" onclick="openModal('{% if res.file %}{{ res.file.url }}{% else %}#{% endif %}')">{{ res.title }}</button>
+                {% empty %}
+                <p style="color:#777; font-size:14px;">No PPT notes available.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- COLUMN 2: Question Papers -->
+        <div class="study-col">
+            <div class="resource-group">
+                <h3>❓ Question Papers</h3>
+                {% for res in question_papers %}
+                <button class="resource-btn" onclick="openModal('{% if res.file %}{{ res.file.url }}{% else %}#{% endif %}')">{{ res.title }}</button>
+                {% empty %}
+                <p style="color:#777; font-size:14px;">No Question Papers available.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- COLUMN 3: Video Lectures -->
+        <div class="study-col">
+            <div class="resource-group">
+                <h3>🎥 Video Lectures</h3>
+                {% if videos or video_lectures %}
+                    {% for res in videos %}
+                    <button class="resource-btn" onclick="openModal('{% if res.file %}{{ res.file.url }}{% else %}#{% endif %}')">{{ res.title }}</button>
+                    {% endfor %}
+                    {% for video in video_lectures %}
+                    <button class="resource-btn" onclick="openVideoModal('{{ video.id }}', '{{ video.title }}', '{% if video.video_file %}{{ video.video_file.url }}{% else %}{{ video.video_url }}{% endif %}')">{{ video.title }}</button>
+                    {% endfor %}
+                {% else %}
+                <p style="color:#777; font-size:14px;">No video lectures available.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= MODAL OVERLAY ================= -->
+<div class="modal-overlay" id="resourceModal">
+    <div class="modal-window">
+        <div class="modal-header">
+            <h3>Preview</h3>
+            <div class="modal-actions">
+                <a href="#" class="modal-download-btn" id="modalDownloadBtn" download>Download</a>
+                <button class="modal-close-btn" onclick="closeModal()">X</button>
+            </div>
+        </div>
+        <div class="modal-content-area">
+            <iframe id="modalIframe" src="" title="Resource Preview"></iframe>
+        </div>
+    </div>
+</div>
+
+<!-- ================= FOOTER ================= -->
+{% include 'TechSutraapp/footer.html' %}
+
+<script src="{% static 'TechSutraapp/js/auth.js' %}"></script>
+<script>
+    function openModal(fileUrl) {
+        document.getElementById('resourceModal').style.display = 'flex';
+        document.getElementById('modalIframe').src = fileUrl;
+        document.getElementById('modalDownloadBtn').href = fileUrl;
+    }
+
+    function openVideoModal(videoId, title, videoUrl) {
+        document.getElementById('resourceModal').style.display = 'flex';
+        const iframe = document.getElementById('modalIframe');
+        if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+            // Convert YouTube URL to embed format
+            let embedUrl = videoUrl.replace('watch?v=', 'embed/');
+            if (embedUrl.includes('&')) {
+                embedUrl = embedUrl.split('&')[0];
+            }
+            iframe.src = embedUrl;
+        } else {
+            iframe.src = videoUrl;
+        }
+        document.getElementById('modalDownloadBtn').href = videoUrl;
+    }
+
+    function closeModal() {
+        document.getElementById('resourceModal').style.display = 'none';
+        document.getElementById('modalIframe').src = '';
+    }
+</script>
+
+</body>
+</html>

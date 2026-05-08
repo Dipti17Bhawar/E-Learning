@@ -1,0 +1,48 @@
+<!-- ================= PREMIUM FOOTER ================= -->
+<footer class="footer">
+    <div class="footer-container">
+        <div class="footer-brand">
+            <h3><div class="brand-logo" style="width: 30px; height: 30px; font-size: 14px; margin-right: 5px;">TS</div> TechSutra</h3>
+            <p>Empowering Engineers with Smart Learning Solutions. We provide unparalleled access to notes, syllabuses, and past papers tailored to your semester.</p>
+        </div>
+        
+        <div class="footer-col">
+            <h4>Quick Links</h4>
+            <ul>
+                {% if user.is_authenticated %}
+                <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                {% endif %}
+                <li><a href="{% url 'home' %}">Home</a></li>
+                <li><a href="{% url 'about' %}">About Us</a></li>
+                <li><a href="{% url 'reviews' %}">Platform Review</a></li>
+            </ul>
+        </div>
+        
+        <div class="footer-col">
+            <h4>Legal</h4>
+            <ul>
+                <li><a href="#">Terms of Service</a></li>
+                <li><a href="#">Privacy Policy</a></li>
+                <li><a href="#">Academic Integrity</a></li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="footer-bottom">
+        <div class="copyright">
+            &copy; 2026 TechSutra | Built with passion.
+        </div>
+    </div>
+</footer>
+
+<script>
+    function toggleMenu() {
+        const hamburger = document.querySelector('.hamburger');
+        const navRight = document.querySelector('.nav-right');
+        
+        if (hamburger && navRight) {
+            hamburger.classList.toggle('toggle');
+            navRight.classList.toggle('active');
+        }
+    }
+</script>

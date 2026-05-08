@@ -1,0 +1,213 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>TechSutra - Dashboard</title>
+    <link rel="stylesheet" href="{% static 'TechSutraapp/css/style.css' %}?v=2.8">
+</head>
+
+<body>
+
+    <!-- ================= NAVBAR ================= -->
+    <nav class="navbar">
+        <div class="brand" onclick="goToDashboard()">
+            <div class="brand-logo">TS</div>
+            <h2 class="brand-name">TechSutra</h2>
+        </div>
+
+        
+        <div class="hamburger" onclick="toggleMenu()">
+            <div class="line1"></div>
+            <div class="line2"></div>
+            <div class="line3"></div>
+        </div>
+        <div class="nav-right" id="navArea">
+            <a href="{% url 'home' %}" class="nav-link">Home</a>
+            {% if request.user.is_authenticated %}
+            <div class="user-section">
+                <div class="user-logo" onclick="window.location.href='{% url 'dashboard' %}'">{{ request.user.username.0|upper }}</div>
+                <span class="username" id="server-username">{{ request.user.username }}</span>                {% if request.user.registration_data.role == 'teacher' or request.user.registration_data.role == 'admin' %}
+                <a href="/admin/" class="nav-link" target="_blank">Admin</a>
+                {% endif %}                <a href="{% url 'logout' %}" class="nav-link">Logout</a>
+            </div>
+            {% else %}
+            <a href="{% url 'login' %}" class="login-btn">Login</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- ================= WELCOME BANNER ================= -->
+    <section class="welcome-banner">
+        <h1 id="welcomeText">Welcome, {{ request.user.username|default:"Guest" }} 👋</h1>
+        <p id="welcomeSubtext">Select your branch to continue</p>
+    </section>
+
+    <!-- ================= DASHBOARD SECTION ================= -->
+    <div class="dashboard-wrapper">
+
+        <!-- STAGE 1: BRANCH SELECTION -->
+        <div id="stage-1" class="dashboard-stage">
+            <div class="dashboard-container">
+                <div class="box">
+                    <button class="select-btn">Select Branch</button>
+                    <div id="branchList" class="list" style="display:block;">
+                        {% for dept in departments %}
+                        <p onclick="openBranchDetails('{{ dept.name }}')">{{ dept.name }}</p>
+                        {% empty %}
+                        <p>No branches available.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STAGE 2: BRANCH DETAILS -->
+        <div id="stage-2" class="dashboard-stage" style="display: none;">
+            <div class="stage-header-band">
+                <button class="back-btn" onclick="goToStage(1)">&#8592; Back</button>
+                <h2 id="selected-branch-title" class="branch-title">Electronics & Computer Engineering</h2>
+            </div>
+            
+            <div class="branch-details-content">
+                <div class="detail-card about-card glass">
+                    <h3>About Branch</h3>
+                    <p id="branch-about-text">Loading information...</p>
+                </div>
+
+                <div class="detail-card table-wrapper glass">
+                    <h3 class="with-indicator"><span class="indicator"></span> Exam & Evaluation Pattern</h3>
+                    <table class="exam-table">
+                        <thead>
+                            <tr class="header-row">
+                                <th>Component</th>
+                                <th class="center-col">Marks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>In-Sem Exam</td><td class="center-col">30</td></tr>
+                            <tr><td>End-Sem Exam</td><td class="center-col">70</td></tr>
+                            <tr><td>Termwork</td><td class="center-col">50</td></tr>
+                            <tr><td>Practical</td><td class="center-col">50</td></tr>
+                            <tr class="highlight-row"><td><b>Credits</b></td><td class="center-col"><b>21</b></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <button class="btn primary-btn select-semester-btn" onclick="goToStage(3)">Select Semester</button>
+            </div>
+        </div>
+
+    </div> <!-- END DASHBOARD WRAPPER -->
+
+    <!-- STAGE 3: SEMESTERS (Full Width Split Layout) -->
+    <div id="stage-3" class="dashboard-stage stage-3-fullscreen" style="display: none;">
+        <!-- Clean minimal blue header just for back button and title -->
+        <div class="stage-3-top-band">
+            <button class="back-btn" onclick="goToStage(2)">&#8592; Back</button>
+            <h2 class="branch-title" id="stage3-branch-title">Branch</h2>
+        </div>
+        
+        <div class="semester-grid" id="semester-grid-container">
+            <!-- Javascript will inject semesters here -->
+        </div>
+    </div>
+
+    <!-- ================= FOOTER ================= -->
+    {% include 'TechSutraapp/footer.html' %}
+
+    <!-- ================= SCRIPT ================= -->
+    <script src="{% static 'TechSutraapp/js/auth.js' %}"></script>
+    <script>
+        const treeData = {{ tree_json|safe }};
+        
+        const branchData = {
+            "Electronics and Computer Engineering": "This branch combines electronics hardware and computer software concepts. Students learn programming, circuits, networking, and embedded systems.",
+            "Electronics And Computer Engineering": "This branch combines electronics hardware and computer software concepts. Students learn programming, circuits, networking, and embedded systems.",
+            "Computer Engineering": "Focuses on software engineering, algorithms, computing architecture, and cutting-edge technologies like AI and Cloud computing.",
+            "Information Technology": "Covers software development, databases, networking, and IT infrastructure necessary for modern business operations.",
+            "Chemical Engineering": "Involves applied chemistry, thermodynamics, processes scaling and material science for industrial manufacturing."
+        };
+
+        let currentSelectedBranch = "";
+
+        function openBranchDetails(branchName) {
+            currentSelectedBranch = branchName;
+            
+            // Set Titles
+            document.getElementById('selected-branch-title').innerText = branchName;
+            document.getElementById('stage3-branch-title').innerText = branchName;
+            
+            // Set About text
+            const aboutText = branchData[branchName] || "A comprehensive engineering program focusing on advanced technical concepts and practical applications.";
+            document.getElementById('branch-about-text').innerText = aboutText;
+
+            goToStage(2);
+        }
+
+        function goToStage(stageNum) {
+            document.getElementById('stage-1').style.display = 'none';
+            document.getElementById('stage-2').style.display = 'none';
+            document.getElementById('stage-3').style.display = 'none';
+            
+            const dashboardWrapper = document.querySelector('.dashboard-wrapper');
+            const welcomeSubtext = document.getElementById('welcomeSubtext');
+            
+            if (stageNum === 1) {
+                if(welcomeSubtext) welcomeSubtext.innerText = "Select your branch to continue";
+                if(dashboardWrapper) dashboardWrapper.style.display = 'block';
+            } else if (stageNum === 2) {
+                if(welcomeSubtext) welcomeSubtext.innerText = "Select your semester to continue";
+                if(dashboardWrapper) dashboardWrapper.style.display = 'block';
+            } else if (stageNum === 3) {
+                if(welcomeSubtext) welcomeSubtext.innerText = "Select your subject to continue";
+                if(dashboardWrapper) dashboardWrapper.style.display = 'none';
+                renderSemesters();
+            }
+
+            document.getElementById(`stage-${stageNum}`).style.display = 'block';
+        }
+
+        function renderSemesters() {
+            const container = document.getElementById('semester-grid-container');
+            container.innerHTML = '';
+            
+            const semesters = treeData[currentSelectedBranch];
+            if (semesters && Object.keys(semesters).length > 0) {
+                // Determine order or sort semesters maybe? "Semester 1", "Semester 2"
+                for (let semName in semesters) {
+                    let semColumn = document.createElement('div');
+                    semColumn.className = 'semester-column';
+                    
+                    let title = document.createElement('h3');
+                    title.className = 'semester-title';
+                    title.innerText = semName;
+                    semColumn.appendChild(title);
+                    
+                    let subjects = semesters[semName];
+                    if (subjects && subjects.length > 0) {
+                        for (let subObj of subjects) {
+                            let subBtn = document.createElement('div');
+                            subBtn.className = 'subject-card';
+                            subBtn.innerHTML = `<span>${subObj.name}</span>`;
+                            subBtn.onclick = () => {
+                                window.location.href = "/resources/" + subObj.id + "/";
+                            };
+                            semColumn.appendChild(subBtn);
+                        }
+                    } else {
+                        semColumn.innerHTML += "<p>No subjects available.</p>";
+                    }
+                    
+                    container.appendChild(semColumn);
+                }
+            } else {
+                container.innerHTML = '<p style="text-align:center;width:100%;">No semesters available for this branch.</p>';
+            }
+        }
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,101 @@
+{% load static %}
+
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>TechSutra - Home</title>
+    <link rel="stylesheet" href="{% static 'TechSutraapp/css/style.css' %}?v=3.1">
+</head>
+
+<body>
+
+<!-- ================= NAVBAR ================= -->
+
+<nav class="navbar glass-nav">
+
+<div class="brand" onclick="goToDashboard()">
+    <div class="brand-logo">TS</div>
+    <h2 class="brand-name">TechSutra</h2>
+</div>
+
+
+        <div class="hamburger" onclick="toggleMenu()">
+            <div class="line1"></div>
+            <div class="line2"></div>
+            <div class="line3"></div>
+        </div>
+        <div class="nav-right" id="navArea">
+    <a href="{% url 'home' %}" class="nav-link">Home</a>
+
+    {% if request.user.is_authenticated %}
+    <div class="user-section">
+        <div class="user-logo"
+            onclick="window.location.href='{% url 'dashboard' %}'">
+            {{ request.user.username.0|upper }}
+        </div>
+        <span class="username">{{ request.user.username }}</span>
+        <a href="{% url 'logout' %}" class="nav-link">Logout</a>
+    </div>
+    {% else %}
+    <a href="{% url 'login' %}" class="btn login-btn">Login</a>
+    {% endif %}
+</div>
+
+</nav>
+
+<!-- ================= HERO ================= -->
+
+<section class="hero">
+    <div class="hero-content">
+        <h1><span class="highlight">Welcome to TechSutra</span></h1>
+        <p>Your Smart Learning Portal for Engineers</p>
+        <button class="btn primary-btn"
+            onclick="window.location.href='{% if request.user.is_authenticated %}{% url 'dashboard' %}{% else %}{% url 'login' %}{% endif %}'">Explore Now</button>
+    </div>
+</section>
+
+<!-- ================= FEATURES ================= -->
+
+<section id="features" class="features-section">
+    <div class="features-header">
+        <h1 class="feature-heading">Platform Features</h1>
+        <p class="section-subtitle">Discover what makes TechSutra amazing</p>
+    </div>
+
+<div class="features-grid">
+
+    {% comment %} <div class="feature-card">
+        <div class="icon-box">🔍</div>
+        <h3>Smart Search</h3>
+        <p>Find notes & resources instantly.</p>
+    </div> {% endcomment %}
+
+    <div class="feature-card">
+        <div class="icon-box">📂</div>
+        <h3>Organized Content</h3>
+        <p>Structured semester-wise materials.</p>
+    </div>
+
+    <div class="feature-card">
+        <div class="icon-box">📱</div>
+        <h3>Mobile Friendly</h3>
+        <p>Learn anytime, anywhere.</p>
+    </div>
+
+    <div class="feature-card">
+        <div class="icon-box">🔐</div>
+        <h3>Secure Dashboard</h3>
+        <p>Safe and personalized access.</p>
+    </div> 
+
+</div>
+
+</section>
+
+{% include 'TechSutraapp/footer.html' %}
+
+</body>
+</html>

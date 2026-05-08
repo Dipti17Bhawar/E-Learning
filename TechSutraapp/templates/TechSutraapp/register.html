@@ -1,0 +1,70 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TechSutra - Register</title>
+    <link rel="stylesheet" href="{% static 'TechSutraapp/css/style.css' %}">
+</head>
+<body>
+
+<!-- ================= NAVBAR ================= -->
+<nav class="navbar">
+
+    <!-- Logo + Name -->
+    <div class="brand" onclick="goToDashboard()">
+        <div class="brand-logo">TS</div>
+        <h2 class="brand-name">TechSutra</h2>
+    </div>
+
+    <!-- Right Side -->
+    
+        <div class="hamburger" onclick="toggleMenu()">
+            <div class="line1"></div>
+            <div class="line2"></div>
+            <div class="line3"></div>
+        </div>
+        <div class="nav-right" id="navArea">
+        <a href="{% url 'home' %}" class="nav-link">Home</a>
+        {% if request.user.is_authenticated %}
+        <div class="user-section">
+            <div class="user-logo" onclick="window.location.href='{% url 'dashboard' %}'">{{ request.user.username.0|upper }}</div>
+            <span class="username" id="server-username">{{ request.user.username }}</span>
+            <a href="{% url 'logout' %}" class="nav-link">Logout</a>
+        </div>
+        {% else %}
+        <a href="{% url 'login' %}" class="login-btn">Login</a>
+        {% endif %}
+    </div>
+
+</nav>
+
+<!-- ================= REGISTER SECTION ================= -->
+<section class="hero">
+    <h1>Create an Account</h1>
+    <p>Join TechSutra to access your personalized learning materials.</p>
+
+    <form class="login-container" method="POST" action="{% url 'register' %}">
+        {% csrf_token %}
+        <input type="text" name="username" placeholder="Choose Username" required>
+        <input type="password" name="password" placeholder="Create Password" required>
+        <button type="submit">Register Now</button>
+        {% if messages %}
+        <ul style="color:red; list-style:none; padding:0; font-size:14px; margin-top:10px;">
+            {% for message in messages %}
+            <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        <p style="margin-top: 15px; font-size: 14px; text-align:center;">Already have an account? <a href="{% url 'login' %}" style="color: #007bff; text-decoration: none;">Log in</a></p>
+    </form>
+</section>
+
+<!-- ================= FOOTER ================= -->
+{% include 'TechSutraapp/footer.html' %}
+
+<!-- ================= SCRIPT ================= -->
+<script src="{% static 'TechSutraapp/js/auth.js' %}"></script>
+
+</body>
+</html>
