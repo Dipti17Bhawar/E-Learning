@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from django.db import models
 from django.core.validators import FileExtensionValidator
+from django.core.exceptions import ValidationError
 
 
 # ✅ Department (same as Branch)
@@ -46,9 +47,26 @@ class Resource(models.Model):
         upload_to='resources/',
         validators=[FileExtensionValidator(
             allowed_extensions=['pdf', 'ppt', 'pptx', 'jpg', 'jpeg', 'png', 'mp4', 'webm', 'ogg']
-        )]
+        )],
+        blank=True,
+        null=True
+    )
+    video_url = models.URLField(
+        blank=True, 
+        null=True, 
+        help_text="For video resources only: Link to YouTube, Vimeo, or other video platforms"
     )
     uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    def clean(self):
+        if self.file_type == 'video':
+            # For video: either file or URL must be provided
+            if not self.video_url and not self.file:
+                raise ValidationError('Please provide either a video URL or upload a video file.')
+        else:
+            # For other resources: file is required
+            if not self.file:
+                raise ValidationError(f'File is required for {self.get_file_type_display()}.')
 
     def __str__(self):
         return f"{self.title} ({self.get_file_type_display()})"
@@ -97,17 +115,16 @@ class VideoLecture(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True, null=True)
     
-    # Support for both file uploads and external URLs 
-    video_file = models.FileField(
-        upload_to='video_lectures/', 
-        validators=[FileExtensionValidator(allowed_extensions=['mp4', 'webm', 'ogg', 'mkv'])],
-        blank=True, 
-        null=True
-    )
-    video_url = models.URLField(blank=True, null=True, help_text="Link to YouTube or external video")
+    # Only URL-based videos - no file uploads
+    video_url = models.URLField(help_text="Link to YouTube, Vimeo, or other video platforms")
     
     uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def clean(self):
+        # Video URL is now required
+        if not self.video_url:
+            raise ValidationError('Video URL is required.')
 
     def __str__(self):
         return f"{self.title} - {self.subject.name}"

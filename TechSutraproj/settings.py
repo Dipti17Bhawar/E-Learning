@@ -26,11 +26,12 @@ SECRET_KEY = 'django-insecure-+hk%%8qm=hdxbyf_7gg+h_&*njvr=8!7(=v452eh8z$)3_q)q7
 DEBUG = True
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
-CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1:8000', 'http://localhost:8000']
-SESSION_COOKIE_SAMESITE = 'Lax'
-CSRF_COOKIE_SAMESITE = 'Lax'
-SESSION_COOKIE_SECURE = False
-CSRF_COOKIE_SECURE = False
+CSRF_FAILURE_VIEW = 'TechSutraapp.views.csrf_failure'
+
+# CSRF settings
+CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript access to CSRF cookie
+CSRF_COOKIE_SECURE = False  # Set to True in production with HTTPS
+CSRF_USE_SESSIONS = False  # Use cookies instead of sessions for CSRF
 
 # Application definition
 

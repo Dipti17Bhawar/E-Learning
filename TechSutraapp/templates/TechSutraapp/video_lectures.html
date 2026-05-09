@@ -1,0 +1,273 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Video Lectures - TechSutra</title>
+    <link rel="stylesheet" href="{% static 'TechSutraapp/css/style.css' %}?v=4.3">
+</head>
+<body>
+
+<!-- ================= NAVBAR ================= -->
+<nav class="navbar">
+    <div class="brand" onclick="window.location.href='{% url 'dashboard' %}'">
+        <div class="brand-logo">TS</div>
+        <h2 class="brand-name">TechSutra</h2>
+    </div>
+
+    <div class="hamburger" onclick="toggleMenu()">
+        <div class="line1"></div>
+        <div class="line2"></div>
+        <div class="line3"></div>
+    </div>
+    <div class="nav-right" id="navArea">
+        <a href="{% url 'home' %}" class="nav-link">Home</a>
+        {% if request.user.is_authenticated %}
+        <div class="user-section">
+            <div class="user-logo" onclick="window.location.href='{% url 'dashboard' %}'">{{ request.user.username.0|upper }}</div>
+            <span class="username" id="server-username">{{ request.user.username }}</span>
+            {% if request.user.registration_data.role == 'teacher' or request.user.registration_data.role == 'admin' %}
+            <a href="/admin/" class="nav-link" target="_blank">Admin</a>
+            {% endif %}
+            <a href="{% url 'logout' %}" class="nav-link">Logout</a>
+        </div>
+        {% else %}
+        <a href="{% url 'login' %}" class="login-btn">Login</a>
+        {% endif %}
+    </div>
+</nav>
+
+<!-- ================= VIDEO LECTURES PAGE ================= -->
+<div class="study-resources-wrapper">
+    <div class="study-header-band">🎥 All Video Lectures ({{ total_videos }})</div>
+
+    {% if videos_by_department %}
+        {% for department_name, videos in videos_by_department.items %}
+        <div class="department-section">
+            <h2 style="color: #2c3e50; margin: 30px 0 20px 0; padding-left: 15px;">{{ department_name }}</h2>
+
+            <div class="videos-grid">
+                {% for video in videos %}
+                <div class="video-card">
+                    <div class="video-thumbnail">
+                        {% if 'youtube.com' in video.video_url or 'youtu.be' in video.video_url %}
+                            <img src="https://img.youtube.com/vi/{{ video.video_url|slice:'-11:' }}/maxresdefault.jpg" alt="{{ video.title }}" onerror="this.src='https://via.placeholder.com/320x180/cccccc/666666?text=Video'">
+                        {% elif 'vimeo.com' in video.video_url %}
+                            <img src="https://via.placeholder.com/320x180/cccccc/666666?text=Vimeo+Video" alt="{{ video.title }}">
+                        {% else %}
+                            <img src="https://via.placeholder.com/320x180/cccccc/666666?text=External+Video" alt="{{ video.title }}">
+                        {% endif %}
+                        <div class="play-overlay" onclick="openVideoModal('{{ video.id }}', '{{ video.title }}', '{{ video.video_url }}')">
+                            <div class="play-button">▶</div>
+                        </div>
+                    </div>
+                    <div class="video-info">
+                        <h3>{{ video.title }}</h3>
+                        <p class="video-subject">{{ video.subject.name }} ({{ video.subject.semester.department.name }} - Sem {{ video.subject.semester.number }})</p>
+                        {% if video.description %}
+                        <p class="video-description">{{ video.description|truncatechars:100 }}</p>
+                        {% endif %}
+                        <p class="video-meta">By {{ video.uploaded_by.username }} • {{ video.created_at|date:"M d, Y" }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div style="text-align: center; padding: 50px;">
+            <h3 style="color: #666;">No video lectures available yet.</h3>
+            <p style="color: #888;">Video lectures will appear here once they are added by administrators.</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- ================= MODAL OVERLAY ================= -->
+<div class="modal-overlay" id="resourceModal">
+    <div class="modal-window">
+        <div class="modal-header">
+            <h3 id="modalTitle">Video Lecture</h3>
+            <div class="modal-actions">
+                <a href="#" class="modal-download-btn" id="modalDownloadBtn" target="_blank">Open in New Tab</a>
+                <button class="modal-close-btn" onclick="closeModal()">X</button>
+            </div>
+        </div>
+        <div class="modal-content-area">
+            <iframe id="modalIframe" src="" title="Video Lecture" allowfullscreen></iframe>
+        </div>
+    </div>
+</div>
+
+<!-- ================= FOOTER ================= -->
+{% include 'TechSutraapp/footer.html' %}
+
+<script src="{% static 'TechSutraapp/js/auth.js' %}"></script>
+<script>
+    function openVideoModal(videoId, title, videoUrl) {
+        document.getElementById('resourceModal').style.display = 'flex';
+        document.getElementById('modalTitle').textContent = title;
+        const iframe = document.getElementById('modalIframe');
+        const downloadBtn = document.getElementById('modalDownloadBtn');
+
+        if (!videoUrl) {
+            iframe.src = '';
+            downloadBtn.href = '#';
+            return;
+        }
+
+        // Handle different video platforms
+        if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+            // Convert YouTube URL to embed format
+            let embedUrl = videoUrl.replace('watch?v=', 'embed/');
+            if (embedUrl.includes('&')) {
+                embedUrl = embedUrl.split('&')[0];
+            }
+            iframe.src = embedUrl;
+        } else if (videoUrl.includes('vimeo.com')) {
+            // Convert Vimeo URL to embed format
+            const videoId = videoUrl.split('/').pop();
+            iframe.src = `https://player.vimeo.com/video/${videoId}`;
+        } else if (videoUrl.includes('dailymotion.com') || videoUrl.includes('dai.ly')) {
+            // Convert Dailymotion URL to embed format
+            let videoId = videoUrl.split('/').pop();
+            if (videoId.includes('?')) {
+                videoId = videoId.split('&')[0];
+            }
+            iframe.src = `https://www.dailymotion.com/embed/video/${videoId}`;
+        } else {
+            // For other video URLs, try to embed directly
+            iframe.src = videoUrl;
+        }
+
+        downloadBtn.href = videoUrl;
+        downloadBtn.style.display = 'inline-block';
+    }
+
+    function closeModal() {
+        document.getElementById('resourceModal').style.display = 'none';
+        document.getElementById('modalIframe').src = '';
+    }
+</script>
+
+<style>
+    .department-section {
+        margin-bottom: 40px;
+    }
+
+    .videos-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 20px;
+        padding: 0 15px;
+    }
+
+    .video-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        overflow: hidden;
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .video-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+
+    .video-thumbnail {
+        position: relative;
+        width: 100%;
+        height: 180px;
+        overflow: hidden;
+    }
+
+    .video-thumbnail img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .play-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    .video-card:hover .play-overlay {
+        opacity: 1;
+    }
+
+    .play-button {
+        width: 60px;
+        height: 60px;
+        background: rgba(255,255,255,0.9);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        color: #333;
+        transition: all 0.3s;
+    }
+
+    .play-button:hover {
+        background: white;
+        transform: scale(1.1);
+    }
+
+    .video-info {
+        padding: 15px;
+    }
+
+    .video-info h3 {
+        margin: 0 0 8px 0;
+        color: #2c3e50;
+        font-size: 16px;
+        line-height: 1.3;
+    }
+
+    .video-subject {
+        color: #007bff;
+        font-size: 14px;
+        margin: 0 0 8px 0;
+        font-weight: 500;
+    }
+
+    .video-description {
+        color: #666;
+        font-size: 14px;
+        margin: 0 0 10px 0;
+        line-height: 1.4;
+    }
+
+    .video-meta {
+        color: #888;
+        font-size: 12px;
+        margin: 0;
+    }
+
+    .modal-content-area iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
+
+    @media (max-width: 768px) {
+        .videos-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+</body>
+</html>

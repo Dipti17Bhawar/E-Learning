@@ -12,10 +12,75 @@ function goToDashboard() {
     }
 }
 
+// CSRF token handling for AJAX requests
+function getCSRFToken() {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    return csrfToken ? csrfToken.value : '';
+}
+
+// Setup CSRF token for fetch requests
+function setupCSRF() {
+    const originalFetch = window.fetch;
+    window.fetch = function(url, options = {}) {
+        if (!options.headers) {
+            options.headers = {};
+        }
+        if (!options.headers['X-CSRFToken']) {
+            options.headers['X-CSRFToken'] = getCSRFToken();
+        }
+        return originalFetch(url, options).then(response => {
+            // If we get a 403 CSRF error, try to refresh token and retry
+            if (response.status === 403 && response.headers.get('content-type')?.includes('text/html')) {
+                return response.text().then(text => {
+                    if (text.includes('CSRF verification failed')) {
+                        return refreshCSRFToken().then(() => {
+                            // Retry the request with new token
+                            options.headers['X-CSRFToken'] = getCSRFToken();
+                            return originalFetch(url, options);
+                        });
+                    }
+                    throw new Error('CSRF verification failed');
+                });
+            }
+            return response;
+        });
+    };
+}
+
+// Refresh CSRF token by making a GET request to any page
+function refreshCSRFToken() {
+    return fetch(window.location.href, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    }).then(response => {
+        if (response.ok) {
+            // Update the CSRF token in the DOM
+            return response.text().then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newToken = doc.querySelector('[name=csrfmiddlewaretoken]');
+                if (newToken) {
+                    const currentToken = document.querySelector('[name=csrfmiddlewaretoken]');
+                    if (currentToken) {
+                        currentToken.value = newToken.value;
+                    }
+                }
+            });
+        }
+    }).catch(() => {
+        // If refresh fails, reload the page
+        window.location.reload();
+    });
+}
+
 function loginUser(event) {
     event.preventDefault();
     const usernameInput = document.getElementById("username").value;
     localStorage.setItem("username", usernameInput);
+    // Trigger storage event for other tabs
+    localStorage.setItem("login_event", Date.now());
     window.location.href = "/dashboard/";
 }
 
@@ -23,6 +88,8 @@ function registerUser(event) {
     event.preventDefault();
     const usernameInput = document.getElementById("reg-username").value;
     localStorage.setItem("username", usernameInput);
+    // Trigger storage event for other tabs
+    localStorage.setItem("login_event", Date.now());
     window.location.href = "/dashboard/";
 }
 
@@ -99,6 +166,17 @@ function displayReviews() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+    // Setup CSRF token handling for AJAX requests
+    setupCSRF();
+
+    // Listen for login from another tab
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'login_event') {
+            // Refresh CSRF token when login detected from another tab
+            refreshCSRFToken();
+        }
+    });
+
     const path = window.location.pathname;
 
     // Home Page specific

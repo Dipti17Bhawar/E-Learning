@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 import json
-from .models import UserRegistrationData, Department, Semester, Subject, Resource, PlatformReview
+from .models import UserRegistrationData, Department, Semester, Subject, Resource, PlatformReview, VideoLecture
 
 # Create your views here.
 def home(request):
@@ -32,6 +32,25 @@ def platform_reviews(request):
     return render(request, 'TechSutraapp/reviews.html', {'reviews': reviews})
 
 @login_required(login_url='login')
+def video_lectures(request):
+    """View all video lectures across all subjects"""
+    video_lectures = VideoLecture.objects.all().select_related('subject', 'subject__semester', 'subject__semester__department', 'uploaded_by').order_by('-created_at')
+
+    # Group by department for better organization
+    videos_by_department = {}
+    for video in video_lectures:
+        dept_name = video.subject.semester.department.name
+        if dept_name not in videos_by_department:
+            videos_by_department[dept_name] = []
+        videos_by_department[dept_name].append(video)
+
+    context = {
+        'videos_by_department': videos_by_department,
+        'total_videos': video_lectures.count()
+    }
+    return render(request, 'TechSutraapp/video_lectures.html', context)
+
+@login_required(login_url='login')
 def view(request):
     file_path = request.GET.get('file', '')
     return render(request, 'TechSutraapp/view.html', {'file_path': file_path})
@@ -40,6 +59,10 @@ def view(request):
 def dashboard(request):
     # Fetch all departments
     departments = Department.objects.all()
+    
+    # Get URL parameters for direct navigation
+    selected_branch = request.GET.get('branch', '')
+    selected_semester = request.GET.get('semester', '')
     
     # Build a tree structure for dependent dropdowns
     tree = {}
@@ -59,6 +82,8 @@ def dashboard(request):
     context = {
         'departments': departments,
         'tree_json': json.dumps(tree),
+        'selected_branch': selected_branch,
+        'selected_semester': selected_semester,
     }
     return render(request, 'TechSutraapp/dashboard.html', context)
 
@@ -131,3 +156,12 @@ def register(request):
             login(request, user)
             return redirect('dashboard')
     return render(request, 'TechSutraapp/register.html')
+
+def csrf_failure(request, reason=""):
+    """
+    Custom CSRF failure view that provides helpful information
+    """
+    return render(request, 'TechSutraapp/csrf_failure.html', {
+        'reason': reason,
+        'title': 'Security Error'
+    })

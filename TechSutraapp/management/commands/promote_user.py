@@ -23,6 +23,11 @@ class Command(BaseCommand):
                 reg_data.role = role
                 reg_data.save()
             
+            # Set staff status for admin role
+            if role == 'admin':
+                user.is_staff = True
+                user.save()
+            
             self.stdout.write(
                 self.style.SUCCESS(f'Successfully promoted {username} to {role}')
             )

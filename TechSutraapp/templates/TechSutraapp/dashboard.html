@@ -130,7 +130,33 @@
             "Chemical Engineering": "Involves applied chemistry, thermodynamics, processes scaling and material science for industrial manufacturing."
         };
 
-        let currentSelectedBranch = "";
+        let currentSelectedBranch = "{{ selected_branch|default:'' }}";
+
+        // Auto-navigate if URL parameters are provided
+        {% if selected_branch %}
+        document.addEventListener('DOMContentLoaded', function() {
+            openBranchDetails("{{ selected_branch }}");
+            {% if selected_semester %}
+            setTimeout(() => {
+                goToStage(3);
+            }, 100);
+            {% endif %}
+        });
+        {% endif %}
+
+        function openBranchDetails(branchName) {
+            currentSelectedBranch = branchName;
+            
+            // Set Titles
+            document.getElementById('selected-branch-title').innerText = branchName;
+            document.getElementById('stage3-branch-title').innerText = branchName;
+            
+            // Set About text
+            const aboutText = branchData[branchName] || "A comprehensive engineering program focusing on advanced technical concepts and practical applications.";
+            document.getElementById('branch-about-text').innerText = aboutText;
+
+            goToStage(2);
+        }
 
         function openBranchDetails(branchName) {
             currentSelectedBranch = branchName;

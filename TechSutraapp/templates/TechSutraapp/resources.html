@@ -38,7 +38,10 @@
 
 <!-- ================= STUDY RESOURCES 3-COLUMN PAGE ================= -->
 <div class="study-resources-wrapper">
-    <div class="study-header-band">{{ subject.name }}</div>
+    <div class="study-header-band">
+        <button class="back-btn" onclick="window.location.href='{% url 'dashboard' %}?branch={{ subject.semester.department.name|urlencode }}&semester=Semester {{ subject.semester.number }}'">&#8592; Back to Subjects</button>
+        <h2 class="subject-title">{{ subject.name }}</h2>
+    </div>
     
     <div class="study-grid">
         <!-- COLUMN 1: Notes (PDF) & Notes (PPT) -->
@@ -80,10 +83,10 @@
                 <h3>🎥 Video Lectures</h3>
                 {% if videos or video_lectures %}
                     {% for res in videos %}
-                    <button class="resource-btn" onclick="openModal('{% if res.file %}{{ res.file.url }}{% else %}#{% endif %}')">{{ res.title }}</button>
+                    <button class="resource-btn" onclick="openVideoModal('{{ res.id }}', '{{ res.title }}', '{% if res.video_url %}{{ res.video_url }}{% else %}{{ res.file.url }}{% endif %}')">{{ res.title }}</button>
                     {% endfor %}
                     {% for video in video_lectures %}
-                    <button class="resource-btn" onclick="openVideoModal('{{ video.id }}', '{{ video.title }}', '{% if video.video_file %}{{ video.video_file.url }}{% else %}{{ video.video_url }}{% endif %}')">{{ video.title }}</button>
+                    <button class="resource-btn" onclick="openVideoModal('{{ video.id }}', '{{ video.title }}', '{{ video.video_url }}')">{{ video.title }}</button>
                     {% endfor %}
                 {% else %}
                 <p style="color:#777; font-size:14px;">No video lectures available.</p>
@@ -123,6 +126,15 @@
     function openVideoModal(videoId, title, videoUrl) {
         document.getElementById('resourceModal').style.display = 'flex';
         const iframe = document.getElementById('modalIframe');
+        const downloadBtn = document.getElementById('modalDownloadBtn');
+
+        if (!videoUrl) {
+            iframe.src = '';
+            downloadBtn.href = '#';
+            return;
+        }
+
+        // Handle different video platforms
         if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
             // Convert YouTube URL to embed format
             let embedUrl = videoUrl.replace('watch?v=', 'embed/');
@@ -130,10 +142,24 @@
                 embedUrl = embedUrl.split('&')[0];
             }
             iframe.src = embedUrl;
+        } else if (videoUrl.includes('vimeo.com')) {
+            // Convert Vimeo URL to embed format
+            const videoId = videoUrl.split('/').pop();
+            iframe.src = `https://player.vimeo.com/video/${videoId}`;
+        } else if (videoUrl.includes('dailymotion.com') || videoUrl.includes('dai.ly')) {
+            // Convert Dailymotion URL to embed format
+            let videoId = videoUrl.split('/').pop();
+            if (videoId.includes('?')) {
+                videoId = videoId.split('?')[0];
+            }
+            iframe.src = `https://www.dailymotion.com/embed/video/${videoId}`;
         } else {
+            // For other video URLs, try to embed directly
             iframe.src = videoUrl;
         }
-        document.getElementById('modalDownloadBtn').href = videoUrl;
+
+        downloadBtn.href = videoUrl;
+        downloadBtn.style.display = 'inline-block';
     }
 
     function closeModal() {
