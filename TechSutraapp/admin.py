@@ -59,27 +59,46 @@ class ResourceAdmin(admin.ModelAdmin):
 
 
 class VideoLectureAdmin(admin.ModelAdmin):
-    list_display = ('title', 'subject', 'uploaded_by', 'created_at', 'video_url')
-    list_filter = ('subject__semester__department', 'uploaded_by', 'created_at')
+    list_display = ('title', 'subject', 'uploaded_by', 'created_at', 'get_video_link')
+    list_filter = ('subject__semester__department', 'subject', 'uploaded_by', 'created_at')
     search_fields = ('title', 'subject__name', 'uploaded_by__username', 'description')
     exclude = ('uploaded_by',)
     readonly_fields = ('created_at',)
+    date_hierarchy = 'created_at'
 
     fieldsets = (
-        ('Basic Information', {
+        ('📚 Basic Information', {
             'fields': ('subject', 'title', 'description')
         }),
-        ('Video Content', {
+        ('🔗 Video URL (YouTube, Vimeo, etc.)', {
             'fields': ('video_url',),
-            'description': 'Provide a URL to the video (YouTube, Vimeo, etc.)'
+            'description': '''
+                <div style="background-color: #d4edda; border: 1px solid #28a745; padding: 10px; border-radius: 4px; margin-bottom: 10px; font-size: 13px;">
+                    <strong>✅ Add Video Through URL Only:</strong><br>
+                    Paste a direct link to a video hosted on YouTube, Vimeo, or similar platforms.<br>
+                    <strong>Examples:</strong><br>
+                    • YouTube: <code>https://www.youtube.com/watch?v=dQw4w9WgXcQ</code><br>
+                    • Vimeo: <code>https://vimeo.com/123456789</code><br>
+                </div>
+            '''
         }),
-        ('Metadata', {
-            'fields': ('uploaded_by', 'created_at'),
+        ('📊 Created Info', {
+            'fields': ('created_at',),
             'classes': ('collapse',)
         }),
     )
 
+    def get_video_link(self, obj):
+        """Display clickable link to video in list view"""
+        if obj.video_url and obj.video_url != 'https://www.youtube.com/watch?v=placeholder':
+            return f'🔗 <a href="{obj.video_url}" target="_blank">Watch Video</a>'
+        else:
+            return '⚠️ No valid URL'
+    get_video_link.short_description = '🎥 Video'
+    get_video_link.allow_tags = True
+
     def save_model(self, request, obj, form, change):
+        """Auto-set the uploaded_by field to current user"""
         if not obj.pk:
             obj.uploaded_by = request.user
         obj.save()

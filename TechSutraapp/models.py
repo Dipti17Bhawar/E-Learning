@@ -109,22 +109,25 @@ class PlatformReview(models.Model):
         return f"Platform Review by {self.user.username}"
 
 
-# ✅ Dedicated Video Lecture linked to Subject
+# ✅ Dedicated Video Lecture linked to Subject (URL-based only)
 class VideoLecture(models.Model):
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name="video_lectures")
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True, null=True)
     
-    # Only URL-based videos - no file uploads
-    video_url = models.URLField(help_text="Link to YouTube, Vimeo, or other video platforms")
+    # URL-based videos only (YouTube, Vimeo, etc.)
+    video_url = models.URLField(
+        default='https://www.youtube.com/watch?v=placeholder',
+        help_text="Link to YouTube, Vimeo, or other video platforms (Required)"
+    )
     
     uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def clean(self):
-        # Video URL is now required
-        if not self.video_url:
-            raise ValidationError('Video URL is required.')
+        # Video URL is required and must not be placeholder
+        if not self.video_url or self.video_url == 'https://www.youtube.com/watch?v=placeholder':
+            raise ValidationError('Video URL is required. Please provide a valid YouTube, Vimeo, or other video platform URL.')
 
     def __str__(self):
         return f"{self.title} - {self.subject.name}"
